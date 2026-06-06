@@ -13,18 +13,15 @@ site_config_bp = Blueprint("site_config", __name__)
 DEV_HOSTS = {"localhost", "127.0.0.1", "10.139.182.125"}
 
 
-def _forbidden(detail, db=None, admin_contact=None):
-    """Build 403 response with admin contact details."""
-    if admin_contact is None:
-        admin_contact = {"email": "admin@yourdomain.com", "phone": ""}
-
-    # If no email provided, try to fetch from settings
-    if not admin_contact.get("email") and db is not None:
+def _forbidden(detail, db=None):
+    """Build 403 response with admin contact details from DB settings."""
+    admin_contact = {"email": "", "phone": ""}
+    if db is not None:
         try:
             settings = db.settings.find_one({}) or {}
             contact = settings.get("admin_contact") or {}
             admin_contact = {
-                "email": contact.get("email", "admin@yourdomain.com"),
+                "email": contact.get("email", ""),
                 "phone": contact.get("phone", "")
             }
         except Exception:
@@ -40,11 +37,21 @@ def _forbidden(detail, db=None, admin_contact=None):
 @site_config_bp.route("/site-config", methods=["GET"])
 def site_config():
     try:
-        host = (request.headers.get("X-Forwarded-Host") or request.host or "").lower()
-        host = host.replace("http://", "").replace("https://", "").strip("/")
-        domain = host.split(":")[0]
+        # ?domain= param lets the website frontend pass its own domain
+        # (needed when the backend is on a different host, e.g. Render vs Netlify)
+        domain_param = (request.args.get("domain") or "").lower().strip("/").replace("http://", "").replace("https://", "").split(":")[0]
 
-        path_slug = (request.args.get("path") or "").lower().strip("/") or None
+        if domain_param:
+            domain = domain_param
+            host = domain_param
+        else:
+            host = (request.headers.get("X-Forwarded-Host") or request.host or "").lower()
+            host = host.replace("http://", "").replace("https://", "").strip("/")
+            domain = host.split(":")[0]
+
+        import re
+        raw_path = (request.args.get("path") or "").lower()
+        path_slug = re.sub(r'/+', '/', raw_path).strip("/") or None
 
         db = get_db()
 
