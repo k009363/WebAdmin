@@ -5,3 +5,7 @@ pymongo>=4.6.0
 bcrypt>=4.1.0
 cloudinary>=1.40.0
 python-dotenv>=1.0.0
+gunicorn>=21.0.0
+flask-limiter>=4.0.0
+pywebpush>=2.0.0
+python-dateutil>=2.8.0
