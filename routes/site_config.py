@@ -56,10 +56,19 @@ def site_config():
         db = get_db()
 
         # ── Build candidate full_keys ──────────────────────────────
+        # Also include https:// prefixed variants to handle old records saved with protocol
         if path_slug:
-            keys = [f"{host}/{path_slug}", f"{domain}/{path_slug}"]
+            keys = [
+                f"{domain}/{path_slug}",
+                f"https://{domain}/{path_slug}",
+                f"http://{domain}/{path_slug}",
+            ]
         else:
-            keys = [host, domain]
+            keys = [
+                domain,
+                f"https://{domain}",
+                f"http://{domain}",
+            ]
 
         # ── Find domain record in MongoDB ─────────────────────────
         domain_doc = None

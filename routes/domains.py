@@ -30,7 +30,7 @@ def list_domains():
 def create_domain():
     try:
         data = request.get_json() or {}
-        domain = data.get("domain", "").strip().lower()
+        domain = data.get("domain", "").strip().lower().replace("https://", "").replace("http://", "").strip("/")
         path = data.get("path", "").strip().lower().strip("/")
         full_key = f"{domain}/{path}" if path else domain
 
@@ -119,9 +119,10 @@ def update_domain(domain_id):
         if "user_id" in data and data["user_id"]:
             update["user_id"] = ObjectId(data["user_id"])
 
-        # Rebuild full_key if domain/path changed
-        d = update.get("domain", existing["domain"])
-        p = update.get("path", existing.get("path", ""))
+        # Rebuild full_key if domain/path changed — strip protocol if user typed it
+        d = update.get("domain", existing["domain"]).replace("https://", "").replace("http://", "").strip("/")
+        p = update.get("path", existing.get("path", "")).strip("/")
+        update["domain"]   = d
         update["full_key"] = f"{d}/{p}" if p else d
 
         db.domains.update_one({"_id": ObjectId(domain_id)}, {"$set": update})
